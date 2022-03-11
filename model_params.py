@@ -1,8 +1,11 @@
 # Constants
 earth_radius = 6371000  # Earth radius [m]
+watth_to_joules = 3600 # Conversion from 1Wh to 1J
+hours_in_year = 365*24
+
 resol = 0.75  # Resolution of the grid, in °
 # Wind turbine specifications
-maxWaterDepth_wind = -1000  # [m]
+maxWaterDepth_wind = 1000  # [m]
 v_c = 3  # Cut-in speed wind turbine [m/s]
 v_f = 25  # Cut-out speed wind turbine [m/s]
 C_pmax = 0.5  # Power coefficient wind turbine (theoretical maximum value is 59%)

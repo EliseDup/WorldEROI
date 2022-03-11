@@ -3,6 +3,8 @@ import numpy as np
 from math import sqrt, sin, cos, pi, exp
 from scipy.special import gamma, gammainc
 
+# Methods used in the WorldEROI model
+
 # The area of the Earth between a line of latitude and the north pole (the area of a spherical cap):
 # A = 2 PI R h       with  h = R * (1-sin(lat))
 
@@ -28,18 +30,28 @@ def C_f(v_r, c, k):
 #     a10, b10 = 0.9871, 11.7542
 #     a50, b50 = 0.9838, 42.5681
 #     aInf, bInt = 0.9619, 88.9204
+a50, b50 = 0.9838, 42.5681
+
+
 def array_effect(n):
-    return 0.983825 * np.exp(-42.568*pi/(4*n*n)) # We assume that array size = 50x50
+    return a50 * np.exp(-b50*pi/(4*n*n)) # We assume that array size = 50x50
 
 
-# Wind turbine rated power [W]
-def rated_power(v_r, n, rho, a):
-    return model_params.C_pmax * pi * rho * pow(v_r, 3) / (8 * n * n) * a
+# Calculation of the installed Rated Power on a given Area [W], given the optimal rated wind speed and spacing parameter n
+# Relationship between rated power, rotor diameter and rated wind speed
+# Power_rated = 1/2 * Cp_max * rho * PI / 4 * D^2 * v_rated^3
+#   => v_rated = (Power_rated / (1/2 * Cp_max * rho * PI / 4 * D^2) )^(1/3)
+#   => D = (Power_rated / (1/2 * Cp_max * rho * PI / 4 * v^3) )^(1/2)
+# n = turbine spacing in # rotor diameter
+# Capacity density [W/m2] = Pr / (nD)^2 =  1/2 * Cp_max * rho(elevation) * PI / (4 * n^2) * v_rated^3
+def rated_power(v_r, n, rho, area):
+    return 1/2 * model_params.C_pmax * rho * pi / (4 * n * n) * pow(v_r, 3) * area
 
 
-# Energy porduced over life time [J]
+# Energy produced on a given area over wind turbine life time [J]
+# Installed Power [W] * Cf [-] * array effect [-] * availability factor [-] * 25 years
 def E_out_wind(v_r, n, c, k, rho, a, avail_factor):
-    return C_f(v_r, c, k) * array_effect(n) * rated_power(v_r, n, rho, a) * avail_factor * 3600 * 24 * 365 * model_params.life_time_wind  # [J]
+    return rated_power(v_r, n, rho, a) * C_f(v_r, c, k) * array_effect(n) * avail_factor * model_params.hours_in_year * model_params.life_time_wind * model_params.watth_to_joules # [J]
 
 
 def E_out_onshore(v_r, n, c, k, rho, a):
@@ -50,8 +62,9 @@ def E_out_offshore(v_r, n, c, k, rho, a):
     return E_out_wind(v_r, n, c, k, rho, a, model_params.availFactor_offshore)
 
 
-def E_in_wind(v_r, n, rho, a, inputs):
-    return rated_power(v_r, n, rho, a) * 1e-9 * inputs  # [J]
+# Energy invested for a given available area a, based on the energy need for 1 GW wind farm [in J / GW]
+def E_in_wind(v_r, n, rho, a, inputsGW):
+    return rated_power(v_r, n, rho, a) * 1e-9 * inputsGW  # [J]
 
 
 def E_out_solar(solar):

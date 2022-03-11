@@ -14,7 +14,6 @@ def world_grid():
     df = df.rename(columns=col_names.iloc[0])
 
     # -------- Discard cells where no RES can presumably be installed --------#
-
     df = df.loc[(df['Country'].isnull() == False) & (df['Country'] != 'Antarctica') & (df['Country'] != 'Greenland') & (
             df['Country'] != 'French Southern & Antarctic Lands')]
     df = df.loc[~df['Country'].apply(lambda x: 'Island' in str(x))]
@@ -31,7 +30,12 @@ def world_grid():
     for i in range(len(wind_sf)):
         df['wind_sf_onshore'] += df[wind_sf.iloc[0, i]] * wind_sf.iloc[1, i]
     df['wind_sf_onshore'] = df['wind_sf_onshore'] / 5625
+    # LC21 = water bodies
     df['wind_sf_offshore'] = df['LC21'] / 5625
+
+    df.loc[df['Elev'] < -model_params.maxWaterDepth_wind, 'wind_sf_offshore'] = 0
+    # EU Report 4 % of 0 - 10 km, 10 % of 10 - 50 km, 25 % of > 50 km
+    # NREL Report 10 % of 0 - 5 Nm, 33 % of 5 - 20 Nm, 67 % of > 20 Nm
     df.loc[df['DistCoast'] >= 37.04, 'wind_sf_offshore'] *= 0.67
     df.loc[(df['DistCoast'] < 37.04) & (df['DistCoast'] >= 9.26), 'wind_sf_offshore'] *= 0.33
     df.loc[df['DistCoast'] < 9.26, 'wind_sf_offshore'] *= 0.1
@@ -43,12 +47,12 @@ def world_grid():
     df['solar_sf'] = df['solar_sf'] / 5625
 
     slope_sf = read_csv('data/Slope_suitability_factor', sep=',', header=None).transpose()
-    df['slopeTotal'] = 0
+    df['slope_total'] = 0
     df['slope_sf'] = 0
     for i in range(len(slope_sf)):
-        df['slopeTotal'] += df[slope_sf.iloc[0, i]]
+        df['slope_total'] += df[slope_sf.iloc[0, i]]
         df['slope_sf'] += df[slope_sf.iloc[0, i]] * slope_sf.iloc[1, i]
-    df['slope_sf'] = df['slope_sf'] / df['slopeTotal']
+    df['slope_sf'] = df['slope_sf'] / df['slope_total']
 
     df['wind_sf_onshore'] *= (100 - df['protected']) / 100
     df['wind_sf_offshore'] *= (100 - df['protected']) / 100
@@ -67,15 +71,15 @@ def world_grid():
     # def offshoreFixedFoundations(depth: Length) = scaling factor fixed * (Gigajoules(16173 + 361962 + 10326 + 3477293))
     df['inputsGWOnshore'] = model_params.fixedOnshore + abs(df['DistCoast']) * (model_params.onshoreOMKm + model_params.onshoreInstallationKm)
 
-    df['scaling_factor_fixed_foundations'] =  2.19 * ((df['Elev'] > -40) & (df['Elev'] <= -35)) + 1.95 * (
+    scaling_factor_fixed_foundations = 2.19 * ((df['Elev'] > -40) & (df['Elev'] <= -35)) + 1.95 * (
                 (df['Elev'] > -35) & (df['Elev'] <= -30)) + 1.57 * ((df['Elev'] > -30) & (df['Elev'] <= -25)) + 1.34 * (
                                                        (df['Elev'] > -25) & (df['Elev'] <= -20)) + 1.08 * (
                                                        (df['Elev'] > -20) & (df['Elev'] <= -15)) + 1 * (
                                                        df['Elev'] > -15)
 
-    df['inputsGWOffshore'] = (df['Elev'] <= -40) * model_params.fixedOffshoreFixed + (df['Elev'] <= -40) * model_params.fixedOffshoreFloating
-    df['inputsGWOffshore'] += df['scaling_factor_fixed_foundations'] * model_params.offshoreFixedFoundations
-    df['inputsGWOffshore'] += abs(df['DistCoast']) * (model_params.offshoreOMKm + model_params.onshoreInstallationKm + model_params.offshoreCableKm)
+    df['inputsGWOffshore'] = (df['Elev'] <= -40) * model_params.fixedOffshoreFixed + (df['Elev'] > -40) * model_params.fixedOffshoreFloating
+    df['inputsGWOffshore'] += scaling_factor_fixed_foundations * model_params.offshoreFixedFoundations
+    df['inputsGWOffshore'] += abs(df['DistCoast']) * (model_params.offshoreOMKm + model_params.offshoreInstallationKm + model_params.offshoreCableKm)
 
     # -------- Build functions for wind energy outputs and wind energy inputs in each cell --------#
 
