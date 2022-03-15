@@ -101,6 +101,18 @@ def world_grid():
     df['wind_offshore_eroi'] = df['wind_offshore_e'] / df['wind_offshore_e_in']
     df['wind_eroi'] = df['wind_e'] / df['wind_e_in']
 
+    # -------- Compute the solar energy outputs, energy inputs and EROI --------#
+
+    df['solar_e'] = df['solar_area'] * df['GHI'] * model_params.GCR_monoSilicon * model_params.eta_monoSilicon * 365 * 3.6e6 * 1e-18
+    # same for Leccisi except that eta_monoSilicon = 0.205 and LT = 30 instead of 25
+    if model_params.remove_operational_e:
+        df['solar_e'] *= (1 - model_params.operEnInputsSolar)
+
+    df['solar_e_in'] = 1.620032 * 1e7 * 240 * df['solar_area'] * model_params.GCR_monoSilicon * 1e-18 / model_params.life_time_solar
+    # same for Leccisi except that Inputs = 1.3615 instead of 1.620032 and Wp = 205 instead of 240
+
+    df['solar_eroi'] = df['solar_e'] / df['solar_e_in']
+
     return df
 
 
