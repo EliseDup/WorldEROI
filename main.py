@@ -17,8 +17,8 @@ def print_hi(name):
 if __name__ == '__main__':
     df = world_grid()
     print_hi('PyCharm')
-    plot_methods.plot_e_out_eroi_wind(df)
-    plot_methods.plot_e_out_eroi_solar(df)
+    # plot_methods.plot_e_out_eroi_wind(df)
+    plot_methods.plot_e_out_eroi_pv(df)
 
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

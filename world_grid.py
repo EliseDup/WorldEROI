@@ -8,11 +8,14 @@ import model_params
 import model_methods
 from math import gamma
 
+# Configuration
+sf_files = "data/suitability_factors/"
+data_files = "data/"
 
 # Build the world grid based on input files
 def world_grid():
-    col_names = read_csv('data/Col_names', sep='; ', header=None)
-    df = pd.read_table('data/wind_solar_0_75', header=None)
+    col_names = read_csv(data_files+'Col_names', sep='; ', header=None)
+    df = pd.read_table(data_files+'wind_solar_0_75', header=None)
     df = df.iloc[:, 0:46]
     df = df.rename(columns=col_names.iloc[0])
 
@@ -28,9 +31,9 @@ def world_grid():
     df['Area'] = model_methods.area(df['Lat'])
 
     # -------- Compute the suitable area in each cell for RES installation --------#
-    df = model_methods.compute_sf(df, 'data/Wind_sf', 'wind_sf_onshore')
+    df = model_methods.compute_sf(df, sf_files+'wind_onshore', 'wind_sf_onshore')
     # LC21 = water bodies
-    df['wind_sf_offshore'] = df['LC21'] / 5625
+    df = model_methods.compute_sf(df, sf_files + 'wind_offshore', 'wind_sf_offshore')
     df.loc[df['Elev'] < -model_params.maxWaterDepth_wind, 'wind_sf_offshore'] = 0
     # EU Report 4 % of 0 - 10 km, 10 % of 10 - 50 km, 25 % of > 50 km
     # NREL Report 10 % of 0 - 5 Nm, 33 % of 5 - 20 Nm, 67 % of > 20 Nm
@@ -38,20 +41,21 @@ def world_grid():
     df.loc[(df['DistCoast'] < 37.04) & (df['DistCoast'] >= 9.26), 'wind_sf_offshore'] *= 0.33
     df.loc[df['DistCoast'] < 9.26, 'wind_sf_offshore'] *= 0.1
 
-    df = model_methods.compute_sf(df, 'data/PV_suitability_factor', 'solar_sf')
-    df = model_methods.compute_sf(df, 'data/Slope_suitability_factor', 'slope_sf')
-    df['solar_sf'] *= df['slope_sf']
+    df = model_methods.compute_sf(df, sf_files+'pv', 'pv_sf')
+    df = model_methods.compute_sf(df, sf_files+'slope_pv', 'slope_pv_sf')
+    df['pv_sf'] *= df['slope_pv_sf']
 
-    # Correct the suitability factor to account for the proportion of protected areas in each cell
-    df['wind_sf_onshore'] *= (100 - df['protected']) / 100
-    df['wind_sf_offshore'] *= (100 - df['protected']) / 100
-    df['solar_sf'] *= (100 - df['protected']) / 100
+    df = model_methods.compute_sf(df, sf_files + 'csp', 'csp_sf')
+    df = model_methods.compute_sf(df, sf_files + 'slope_csp', 'slope_csp_sf')
+    df['csp_sf'] *= df['slope_csp_sf']
+
 
     df['wind_area_onshore'] = df['Area'] * df['wind_sf_onshore']  # [m²]
     df['wind_area_offshore'] = df['Area'] * df['wind_sf_offshore']  # [m²]
-    df['solar_area'] = df['Area'] * df['solar_sf']  # [m²]
+    df['pv_area'] = df['Area'] * df['pv_sf']  # [m²]
+    df['csp_area'] = df['Area'] * df['csp_sf']  # [m²]
 
-    # -------- Compute wind energy inputs per GW installed --------#
+    # -------- Compute wind_onshore energy inputs per GW installed --------#
     # Fixed value for onshore / offshore bottom fixed / offshore floating
     # fixedOnshore = Gigajoules(13744075)
     # fixedOffshoreFixed = Gigajoules(18185974)
@@ -70,14 +74,14 @@ def world_grid():
     df['inputs_gw_offshore'] += scaling_factor_fixed_foundations * model_params.offshoreFixedFoundations
     df['inputs_gw_offshore'] += abs(df['DistCoast']) * (model_params.offshoreOMKm + model_params.offshoreInstallationKm + model_params.offshoreCableKm)
 
-    # -------- Build parameters for wind energy outputs and wind energy inputs in each cell --------#
+    # -------- Build parameters for wind_onshore energy outputs and wind_onshore energy inputs in each cell --------#
 
     df['WindMean100'] = (df['WindMean71'] + df['WindMean125']) / 2
     df['WindStd100'] = (df['WindStd71'] + df['WindStd125']) / 2
     df['k'] = pow(df['WindStd100'] / df['WindMean100'], -1.086)
     df['c'] = df['WindMean100'] / (1 + 1 / df['k']).apply(lambda x: gamma(x))
     # P = 1atm * (1 - 0.0065 z / T)^5.255
-    # with z = elev + wind turbine height
+    # with z = elev + wind_onshore turbine height
     df['z'] = df['Elev'] * (df['Elev'] > 0) + 100
     df['P'] = 101325 * pow(1 - 0.0065 * df['z'] / 288.15, 5.255)  # [Pa]
     # rho := air density = P/RT
@@ -103,15 +107,15 @@ def world_grid():
 
     # -------- Compute the solar energy outputs, energy inputs and EROI --------#
 
-    df['solar_e'] = df['solar_area'] * df['GHI'] * model_params.GCR_monoSilicon * model_params.eta_monoSilicon * 365 * 3.6e6 * 1e-18
+    df['pv_e'] = df['pv_area'] * df['GHI'] * model_params.gcr_mono_silicon * model_params.eta_mono_silicon * 365 * 3.6e6 * 1e-18
     # same for Leccisi except that eta_monoSilicon = 0.205 and LT = 30 instead of 25
     if model_params.remove_operational_e:
-        df['solar_e'] *= (1 - model_params.operEnInputsSolar)
+        df['pv_e'] *= (1 - model_params.operEnInputsSolar)
 
-    df['solar_e_in'] = 1.620032 * 1e7 * 240 * df['solar_area'] * model_params.GCR_monoSilicon * 1e-18 / model_params.life_time_solar
+    df['pv_e_in'] = model_params.pvlifetimeinputs * model_params.wc_pv_panel * df['pv_area'] * model_params.gcr_mono_silicon * 1e-18 / model_params.life_time_solar
     # same for Leccisi except that Inputs = 1.3615 instead of 1.620032 and Wp = 205 instead of 240
 
-    df['solar_eroi'] = df['solar_e'] / df['solar_e_in']
+    df['pv_eroi'] = df['pv_e'] / df['pv_e_in']
 
     return df
 
@@ -122,7 +126,7 @@ def world_rooftop():
     df = df.rename(columns=col_names.iloc[0])
     df.set_index('Country', inplace=True)
     df['Residential E_out [J]'] = df['Area PV Residential'] * model_params.sf_residential * 1e6 * df[
-        'GHI'] * model_params.eta_monoSilicon * 365 * 25 * 3.6e6
+        'GHI'] * model_params.eta_mono_silicon * 365 * 25 * 3.6e6
     df['Residential E_out [J]'] *= (1 - model_params.operEnInputsSolar)  # Subtracting operational energy inputs
     df['Residential E_out [EJ/year]'] = df['Residential E_out [J]'] * 1e-18 / 25
     df['Residential E_in'] = df['Area PV Residential'] * model_params.sf_residential * 1e6 * 1.620032 * 1e7 * 240  # [J]

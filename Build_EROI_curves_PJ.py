@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Computation of global wind and solar EROI curves
+Computation of global wind_onshore and solar EROI curves
 
 Pierre JACQUES
 April 2021
 """
 
-# This python script recomputes from scratch the global wind and solar EROI curves, initally built by Elise Dupont
+# This python script recomputes from scratch the global wind_onshore and solar EROI curves, initally built by Elise Dupont
 # Only the optimal values in each cell of v_r and n for EROI>=1 are given as input instead of being recomputed via an optimization problem, like Elise did
 
 import numpy as np
@@ -107,7 +107,7 @@ df['windArea_offshore'] = df['Area'] * df['windSuitaFactor_offshore']  # [m²]
 df['solarArea'] = df['Area'] * df['solarSuitaFactor']  # [m²]
 
 
-#-------- Compute wind energy inputs per GW installed --------#
+#-------- Compute wind_onshore energy inputs per GW installed --------#
 
 df['inputsOnshore'] = 1.2850855e16 + (6.05739375e11 + 2.13e10) * abs(df['DistCoast']) # J/GW
 df['inputsOffshore'] = 1.7502782e16 + 8.485e15 * (df['Elev']<=-40) # J/GW
@@ -115,14 +115,14 @@ df['inputsOffshore'] += 3.656429e15 * ( 2.19 * ((df['Elev']>-40)&(df['Elev']<=-3
 df['inputsOffshore'] += 2.652527e13 * abs(df['DistCoast'])
 
 
-#-------- Build functions for wind energy outputs and wind energy inputs in each cell --------#
+#-------- Build functions for wind_onshore energy outputs and wind_onshore energy inputs in each cell --------#
 
 df['WindMean100'] = (df['WindMean71'] + df['WindMean125']) / 2
 df['WindStd100'] = (df['WindStd71'] + df['WindStd125']) / 2
 df['k'] = pow( df['WindStd100']/df['WindMean100'], -1.086 )
 df['c'] = df['WindMean100'] / (1+1/df['k']).apply(lambda x: gamma(x))
 # P = 1atm * (1 - 0.0065 z / T)^5.255
-# with z = elev + wind turbine height
+# with z = elev + wind_onshore turbine height
 df['z'] = df['Elev']*(df['Elev']>0) + 100
 df['P'] = 101325 * pow(1-0.0065*df['z']/288.15, 5.255) # [Pa]
 # rho := air density = P/RT
@@ -168,7 +168,7 @@ def E_in_offshore(v_r, n, rho, A_Onshore, A_Offshore, inputOnshore, inputOffshor
 # df_opti['sol']= df_opti.apply(opti_fun, axis=1)
 
 
-#-------- Optimization problem to recompute v_r_opti and n_opti for wind --------#
+#-------- Optimization problem to recompute v_r_opti and n_opti for wind_onshore --------#
 
 # def Net_E_out(var, c, k, rho, A_Onshore, A_Offshore, inputOnshore, inputOffshore):
 #     return - ( E_out(var[0], var[1], c, k, rho, A_Onshore, A_Offshore) - E_in(var[0], var[1], rho, A_Onshore, A_Offshore, inputOnshore, inputOffshore) )
@@ -188,7 +188,7 @@ def E_in_offshore(v_r, n, rho, A_Onshore, A_Offshore, inputOnshore, inputOffshor
 # df['n_opti_PJ'] = df_opti['sol'].apply(lambda y: y.x[1])
 
 
-#-------- Given v_r_opti and n_opti, compute wind energy outputs, energy inputs and EROI --------#
+#-------- Given v_r_opti and n_opti, compute wind_onshore energy outputs, energy inputs and EROI --------#
 
 df_compute_E_out = DataFrame(index=df.index)
 df_compute_E_out[['v_r', 'n', 'c', 'k', 'rho', 'windArea_onshore', 'windArea_offshore']] = df.loc[:,['v_r_opti', 'n_opti', 'c', 'k', 'rho', 'windArea_onshore', 'windArea_offshore']]
@@ -408,8 +408,8 @@ df_plot_solar['Global EROI'] = df_plot_solar['E_out'].cumsum() / df_plot_solar['
 
 plt.figure()
 plt.plot(df_plot_total['cum_E_out'], df_plot_total['Global EROI'], label='Total', color='tab:blue')
-plt.plot(df_plot_wind_onshore['cum_E_out'], df_plot_wind_onshore['Global EROI'], label='Onshore wind', color='tab:green')
-plt.plot(df_plot_wind_offshore['cum_E_out'], df_plot_wind_offshore['Global EROI'], label='Offshore wind', color='tab:purple')
+plt.plot(df_plot_wind_onshore['cum_E_out'], df_plot_wind_onshore['Global EROI'], label='Onshore wind_onshore', color='tab:green')
+plt.plot(df_plot_wind_offshore['cum_E_out'], df_plot_wind_offshore['Global EROI'], label='Offshore wind_onshore', color='tab:purple')
 plt.plot(df_plot_solar['cum_E_out'], df_plot_solar['Global EROI'], label='Solar', color='tab:orange')
 plt.grid(True, color="#93a1a1", alpha=0.3)
 plt.legend(loc='upper right', fancybox=True, shadow=True)

@@ -8,10 +8,10 @@ remove_operational_e = True
 
 # Wind turbine specifications
 maxWaterDepth_wind = 1000  # [m]
-v_c = 3  # Cut-in speed wind turbine [m/s]
-v_f = 25  # Cut-out speed wind turbine [m/s]
-C_pmax = 0.5  # Power coefficient wind turbine (theoretical maximum value is 59%)
-availFactor_onshore = 0.97  # % Time wind turbine is not shut down due to maintenance, etc
+v_c = 3  # Cut-in speed wind_onshore turbine [m/s]
+v_f = 25  # Cut-out speed wind_onshore turbine [m/s]
+C_pmax = 0.5  # Power coefficient wind_onshore turbine (theoretical maximum value is 59%)
+availFactor_onshore = 0.97  # % Time wind_onshore turbine is not shut down due to maintenance, etc
 availFactor_offshore = 0.95
 operEnInputsOnshoreWind = 0.035  # Operational energy cost as a fraction of outputs [/]
 operEnInputsOffshoreWind = 0.007  # Operational energy cost as a fraction of outputs [/]
@@ -31,9 +31,12 @@ onshoreInstallationKm = 605.74 * 1E9  # J / GW / km
 onshoreOMKm = 21.3 * 1E9  # J / GW / km
 
 # Solar power plants specifications
+wc_pv_panel = 240 # Wc / m2
 operEnInputsSolar = 0.0097  # Operational energy cost as a fraction of outputs [/]
-GCR_monoSilicon = 0.2  # Ground cover ratio [%]
-eta_monoSilicon = 0.186  # Solar to electricity conversion efficiency [%]
+gcr_mono_silicon = 0.2  # Ground cover ratio [%]
+eta_mono_silicon = 0.186  # Mean solar to electricity conversion efficiency over monosilicon pv lifetiem [%]
 sf_commercial = 0.65
 sf_residential = 0.25
 life_time_solar = 25
+# GJ / GW
+pvlifetimeinputs = 8880746 + 5596459 + 61279 + 61279 + 469257 + 45252

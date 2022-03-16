@@ -25,7 +25,7 @@ def area(latitude):
 
 
 # Wind power calculations
-# Capacity factor calculation depending on wind speed distribution and wind turbine specification
+# Capacity factor calculation depending on wind_onshore speed distribution and wind_onshore turbine specification
 def C_f(v_r, c, k):
     return -np.exp(-pow(model_params.v_f / c, k)) + 3 * pow(c, 3) * gamma(3 / k) / (
                 k * (pow(v_r, 3) - pow(model_params.v_c, 3))) * (
@@ -44,8 +44,8 @@ def array_effect(n):
     return a50 * np.exp(-b50 * pi / (4 * n * n))  # We assume that array size = 50x50
 
 
-# Calculation of the installed Rated Power on a given Area [W], given the optimal rated wind speed and spacing parameter n
-# Relationship between rated power, rotor diameter and rated wind speed
+# Calculation of the installed Rated Power on a given Area [W], given the optimal rated wind_onshore speed and spacing parameter n
+# Relationship between rated power, rotor diameter and rated wind_onshore speed
 # Power_rated = 1/2 * Cp_max * rho * PI / 4 * D^2 * v_rated^3
 #   => v_rated = (Power_rated / (1/2 * Cp_max * rho * PI / 4 * D^2) )^(1/3)
 #   => D = (Power_rated / (1/2 * Cp_max * rho * PI / 4 * v^3) )^(1/2)
@@ -55,7 +55,7 @@ def rated_power(v_r, n, rho, area):
     return 1 / 2 * model_params.C_pmax * rho * pi / (4 * n * n) * pow(v_r, 3) * area
 
 
-# Energy produced on a given area over wind turbine life time [J]
+# Energy produced on a given area over wind_onshore turbine life time [J]
 # Installed Power [W] * Cf [-] * array effect [-] * availability factor [-] * 25 years
 def E_out_wind(v_r, n, c, k, rho, a, avail_factor):
     return rated_power(v_r, n, rho, a) * C_f(v_r, c, k) * array_effect(
@@ -70,7 +70,7 @@ def E_out_offshore(v_r, n, c, k, rho, a):
     return E_out_wind(v_r, n, c, k, rho, a, model_params.availFactor_offshore)
 
 
-# Energy invested for a given available area a, based on the energy need for 1 GW wind farm [in J / GW]
+# Energy invested for a given available area a, based on the energy need for 1 GW wind_onshore farm [in J / GW]
 def E_in_wind(v_r, n, rho, a, inputsGW):
     return rated_power(v_r, n, rho, a) * 1e-9 * inputsGW  # [J]
 
@@ -102,4 +102,6 @@ def compute_sf(df, sf_table, name):
         df[name] += df[sf.iloc[0, i]] * sf.iloc[1, i]
         total += df[sf.iloc[0, i]]
     df[name] = df[name]/total
+    # Correct the suitability factor to account for the proportion of protected areas in each cell
+    df[name] *= (100 - df['protected']) / 100
     return df
