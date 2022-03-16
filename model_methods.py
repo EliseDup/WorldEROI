@@ -55,11 +55,11 @@ def rated_power(v_r, n, rho, area):
     return 1 / 2 * model_params.C_pmax * rho * pi / (4 * n * n) * pow(v_r, 3) * area
 
 
-# Energy produced on a given area over wind_onshore turbine life time [J]
-# Installed Power [W] * Cf [-] * array effect [-] * availability factor [-] * 25 years
+# Energy produced on a given area over wind_onshore turbine life time [J/year]
+# Installed Power [W] * Cf [-] * array effect [-] * availability factor [-]
 def E_out_wind(v_r, n, c, k, rho, a, avail_factor):
     return rated_power(v_r, n, rho, a) * C_f(v_r, c, k) * array_effect(
-        n) * avail_factor * model_params.hours_in_year * model_params.life_time_wind * model_params.watth_to_joules  # [J]
+        n) * avail_factor * model_params.hours_in_year * model_params.watth_to_joules  # [J]
 
 
 def E_out_onshore(v_r, n, c, k, rho, a):
@@ -71,12 +71,13 @@ def E_out_offshore(v_r, n, c, k, rho, a):
 
 
 # Energy invested for a given available area a, based on the energy need for 1 GW wind_onshore farm [in J / GW]
-def E_in_wind(v_r, n, rho, a, inputsGW):
-    return rated_power(v_r, n, rho, a) * 1e-9 * inputsGW  # [J]
+def E_in_wind(v_r, n, rho, a, inputs_gw):
+    return rated_power(v_r, n, rho, a) * 1e-9 * inputs_gw  # [J]
 
 
-def E_out_solar(solar):
-    return solar * model_params.eta_monoSilicon * 365 * 24 * 3.6 * model_params.life_time_solar
+# From a given irradiation in kWh/m^2/day and an suitable area in m^2, compute the annual output [J/year]
+def E_out_solar(irradiation, area):
+    return irradiation * 365 * 1000 * model_params.eta_mono_silicon * area * model_params.watth_to_joules
 
 
 # Build cumulated E out [EJ/year] and EROI dataframe, based on the world grid dataframe df,

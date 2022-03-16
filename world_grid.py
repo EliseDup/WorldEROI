@@ -88,8 +88,8 @@ def world_grid():
     df['rho'] = df['P'] / (287.05 * 288.15)  # [kg/m³]
 
     # Energy produced [EJ/year]
-    df['wind_onshore_e'] = model_methods.E_out_wind(df.v_r_opti, df.n_opti, df.c, df.k, df.rho, df.wind_area_onshore, model_params.availFactor_onshore) * 1e-18 / model_params.life_time_wind
-    df['wind_offshore_e'] = model_methods.E_out_wind(df.v_r_opti, df.n_opti, df.c, df.k, df.rho, df.wind_area_offshore, model_params.availFactor_offshore) * 1e-18 / model_params.life_time_wind
+    df['wind_onshore_e'] = model_methods.E_out_wind(df.v_r_opti, df.n_opti, df.c, df.k, df.rho, df.wind_area_onshore, model_params.availFactor_onshore) * 1e-18
+    df['wind_offshore_e'] = model_methods.E_out_wind(df.v_r_opti, df.n_opti, df.c, df.k, df.rho, df.wind_area_offshore, model_params.availFactor_offshore) * 1e-18
     if model_params.remove_operational_e :
         df['wind_onshore_e'] *= (1 - model_params.operEnInputsOnshoreWind)
         df['wind_offshore_e'] *= (1 - model_params.operEnInputsOffshoreWind)
@@ -107,12 +107,12 @@ def world_grid():
 
     # -------- Compute the solar energy outputs, energy inputs and EROI --------#
 
-    df['pv_e'] = df['pv_area'] * df['GHI'] * model_params.gcr_mono_silicon * model_params.eta_mono_silicon * 365 * 3.6e6 * 1e-18
+    df['pv_e'] = model_methods.E_out_solar(df['GHI'], df['pv_area']* model_params.gcr_mono_silicon) * 1e-18
     # same for Leccisi except that eta_monoSilicon = 0.205 and LT = 30 instead of 25
     if model_params.remove_operational_e:
         df['pv_e'] *= (1 - model_params.operEnInputsSolar)
-
-    df['pv_e_in'] = model_params.pvlifetimeinputs * model_params.wc_pv_panel * df['pv_area'] * model_params.gcr_mono_silicon * 1e-18 / model_params.life_time_solar
+    GW_installed = model_params.wc_pv_panel * df['pv_area'] * model_params.gcr_mono_silicon / 1E9
+    df['pv_e_in'] = (model_params.pvlifetimeinputs / model_params.life_time_solar) * GW_installed * 1e-18
     # same for Leccisi except that Inputs = 1.3615 instead of 1.620032 and Wp = 205 instead of 240
 
     df['pv_eroi'] = df['pv_e'] / df['pv_e_in']
@@ -120,24 +120,33 @@ def world_grid():
     return df
 
 
-def world_rooftop():
-    col_names = read_csv('Col_names_solarRooftop', sep=', ', header=None)
-    df = pd.read_table('rooftop_area', header=None)
+def world_rooftop_pv():
+    col_names = read_csv(data_files+'Col_names_solarRooftop', sep=', ', header=None)
+    df = pd.read_table(data_files+'rooftop_area', header=None)
     df = df.rename(columns=col_names.iloc[0])
     df.set_index('Country', inplace=True)
-    df['Residential E_out [J]'] = df['Area PV Residential'] * model_params.sf_residential * 1e6 * df[
-        'GHI'] * model_params.eta_mono_silicon * 365 * 25 * 3.6e6
-    df['Residential E_out [J]'] *= (1 - model_params.operEnInputsSolar)  # Subtracting operational energy inputs
-    df['Residential E_out [EJ/year]'] = df['Residential E_out [J]'] * 1e-18 / 25
-    df['Residential E_in'] = df['Area PV Residential'] * model_params.sf_residential * 1e6 * 1.620032 * 1e7 * 240  # [J]
+    mean_ghi = (world_grid().groupby(['Country']).mean())['GHI']
+    df = pd.concat([df, mean_ghi.reindex(df.index)], axis=1)
+    df.loc['Singapore', 'GHI'] = df.loc['Malaysia', 'GHI']
+    df.loc['Bahrain', 'GHI'] = df.loc['Qatar', 'GHI']
+    df.loc['Chinese Taipei', 'GHI'] = df.loc['China', 'GHI']
+    df.loc['Hong Kong, China', 'GHI'] = df.loc['China', 'GHI']
+    df.loc['Kosovo', 'GHI'] = df.loc['Montenegro', 'GHI']
+    df.loc[['Netherlands Antilles', 'Gibraltar'], 'GHI'] = 0
 
-    df['Commercial E_out [J]'] = df['Area PV Commercial'] * model_params.sf_commercial * 1e6 * df[
-        'GHI'] * model_params.eta_monoSilicon * 365 * 25 * 3.6e6
-    df['Commercial E_out [J]'] *= (1 - model_params.operEnInputsSolar)  # Subtracting operational energy inputs
-    df['Commercial E_out [EJ/year]'] = df['Commercial E_out [J]'] * 1e-18 / 25
+    df['residential_e'] = model_methods.E_out_solar(df['GHI'], df['Area PV Residential'] * 1E6 * model_params.sf_residential) * 1e-18
+    df['commercial_e'] = model_methods.E_out_solar(df['GHI'], df['Area PV Commercial'] * 1E6 * model_params.sf_commercial) * 1e-18
+    if model_params.remove_operational_e:
+        df['residential_e'] *= (1 - model_params.operEnInputsSolar)
+        df['commercial_e'] *= (1 - model_params.operEnInputsSolar)
 
-    df['Total E_out [EJ/year]'] = df['Residential E_out [EJ/year]'] + df['Commercial E_out [EJ/year]']
-    df['EROI'] = df['Residential E_out [J]'] / df['Residential E_in'].apply(
-        lambda x: max(x, 1))  # EROI_residential = EROI_commercial = EROI_total
+    gw_installed_res = model_params.wc_pv_panel * df['Area PV Residential'] * 1E6 * model_params.sf_residential / 1E9
+    df['residential_e_in'] = (model_params.pvlifetimeinputs / model_params.life_time_solar) * gw_installed_res * 1e-18
+    gw_installed_com = model_params.wc_pv_panel * df['Area PV Commercial'] * 1E6 * model_params.sf_commercial / 1E9
+    df['commercial_e_in'] = (model_params.pvlifetimeinputs / model_params.life_time_solar) * gw_installed_com * 1e-18
+
+    df['pv_e'] = df['residential_e'] + df['commercial_e']
+    df['pv_e_in'] = df['residential_e_in'] + df['commercial_e_in']
+    df['pv_eroi'] = df['pv_e'] / df['pv_e_in'] #.apply(lambda x: max(x, 1))  # EROI_residential = EROI_commercial = EROI_total
 
     return df

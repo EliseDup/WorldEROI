@@ -38,5 +38,5 @@ eta_mono_silicon = 0.186  # Mean solar to electricity conversion efficiency over
 sf_commercial = 0.65
 sf_residential = 0.25
 life_time_solar = 25
-# GJ / GW
-pvlifetimeinputs = 8880746 + 5596459 + 61279 + 61279 + 469257 + 45252
+# J / GW
+pvlifetimeinputs = (8880746 + 5596459 + 61279 + 61279 + 469257 + 45252) * 1E9
