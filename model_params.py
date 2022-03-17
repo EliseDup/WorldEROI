@@ -18,7 +18,7 @@ oe_pv = 0.0097
 oe_csp = 0.05 + 0.023
 
 # Wind turbine specifications
-maxWaterDepth_wind = 1000  # [m]
+maxWaterDepth_wind = -1000  # [m]
 v_c = 3  # Cut-in speed wind_onshore turbine [m/s]
 v_f = 25  # Cut-out speed wind_onshore turbine [m/s]
 C_pmax = 0.5  # Power coefficient wind_onshore turbine (theoretical maximum value is 59%)
