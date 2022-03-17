@@ -1,6 +1,4 @@
 import matplotlib.pyplot as plt
-from pandas import DataFrame
-from pandas import concat
 import model_methods
 
 
