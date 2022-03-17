@@ -36,9 +36,14 @@ First install the dependencies :
 
 Then launch python and load the database with the world_grid_eroi() method :
 
-`df = world_grid.world_grid_eroi()`
+`>>> import world_grid`
 
-That is it, you can play with the data.
+`>>> df = world_grid.world_grid_eroi()`
+
+
+Ignore the 'ParserWarning' and 'DtypeWarning'.
+
+That is it, you should have all the date in your dataframe *df*.
 
 
 * Or ... Do more with the model with a Python IDE like PyCharm :-)

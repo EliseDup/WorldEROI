@@ -155,6 +155,16 @@ def world_grid_eroi():
     df['pv_eroi'] = df['pv_e'] / df['pv_e_in']
 
     # -------- Compute the solar csp energy outputs, energy inputs and EROI --------#
+    # TODO
+
+
+    # Replace Nan values by 0
+    # TODO : check why these NaNs occur
+    df['pv_e'].fillna('0')
+    df['pv_e_in'].fillna('0')
+    df['pv_eroi'].fillna('0')
+    df['wind_onshore_eroi'].fillna('0')
+    df['wind_offshore_eroi'].fillna('0')
     return df
 
 def world_rooftop_pv():
