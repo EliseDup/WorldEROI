@@ -3,7 +3,9 @@
 # Press ⌃R to execute it or replace it with your code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
 import plot_methods
+import wind_turbine_optimisation
 from world_grid import world_grid, world_rooftop_pv
+from model_methods import pv_efficiency
 import numpy as np
 import matplotlib.pyplot as plt
 from pandas import DataFrame
@@ -15,11 +17,8 @@ def print_hi(name):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    rooftop = world_rooftop_pv()
-    #df = world_grid()
-    print_hi('PyCharm')
-    # plot_methods.plot_e_out_eroi_wind(df)
-    plot_methods.plot_e_out_eroi_pv(rooftop)
+    wind_turbine_optimisation.capacity_density_optimisation()
+    #plot_methods.plot_e_out_eroi_pv(rooftop)
 
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
