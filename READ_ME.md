@@ -7,6 +7,10 @@ You are welcome to report any bugs related to the code to the following:
 ## Content
 
 ## How to run the model
+Download the source files from git from a terminal with the following command (or directly via the website) :
+
+`git clone https://github.com/EliseDup/WorldEROI`
+
 The main function of the model is world_grid.world_grid_eroi() that return a pandas dataframe with a row per grid cell.
 It contains all the information to estimate the wind and solar potential in every geographical location: estimated energy outputs [EJ/year], energy inputs [EJ/year] and associated EROI [-]
 
