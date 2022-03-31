@@ -1,6 +1,6 @@
 # Constants
 earth_radius = 6371000  # Earth radius [m]
-watth_to_joules = 3600 # Conversion from 1Wh to 1J
+watth_to_joules = 3600  # Conversion from 1Wh to 1J
 hours_in_year = 365*24
 
 resol = 0.75  # Resolution of the grid, in °

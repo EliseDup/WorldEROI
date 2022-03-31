@@ -71,7 +71,7 @@ def world_grid():
     df['pv_area'] = df['Area'] * df['pv_sf']  # [m²]
     df['csp_area'] = df['Area'] * df['csp_sf']  # [m²]
 
-    # -------- Build parameters for wind energy in each cell --------#
+    # -------- Build parameters for wind energy in each cell -------- #
     # Database only contains wind at 71 and 125 m height, we take the arithmetic mean of mean and std to approximate
     # wind speed at 100 m height
     df['WindMean100'] = (df['WindMean71'] + df['WindMean125']) / 2
