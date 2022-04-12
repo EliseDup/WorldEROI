@@ -15,6 +15,7 @@ from pandas import DataFrame, read_csv
 
 # The area of the lat long rectangle is proportionnal to the difference between the 2 longitudes
 # => AreaRect = 2 PI R^2 *|sin(lat1)-sin(lat2)| * |lon1 - lon2| / 360
+import world_grid
 
 
 def area(latitude):
@@ -114,3 +115,14 @@ def compute_sf(df, sf_table, name):
     # Correct the suitability factor to account for the proportion of protected areas in each cell
     df[name] *= (100 - df['protected']) / 100
     return df
+
+
+def print_results_country(countries, grid):
+    unit = 1 # model_params.ej_to_twh
+    print("Country", "Area[1000km2]", "WindOnshore[TWh/y]", "InstalledCapacity[GW]", "CF[%]", "SuitableArea[km2]", "WindOffshore[TWh/y]", "InstalledCapacity[GW]", "CF[%]",
+          "SuitableArea[1000km2]",  "PV[TWh/y]", "InstalledCapacity[GW]", "CF[%]", "SuitableArea[1000km2]")
+    for c in countries:
+        cells = world_grid.country(c, grid)
+        print(c, cells["Area"].sum()/1E9, cells["wind_onshore_e"].sum() * unit, cells["wind_onshore_gw"].sum(), cells["wind_area_onshore"].sum()/1E9,
+          cells["wind_offshore_e"].sum() * unit,  cells["wind_offshore_gw"].sum(), cells["wind_area_offshore"].sum()/1E9,
+          cells["pv_e"].sum() * unit,  cells["pv_gw"].sum(), cells["pv_area"].sum()/1E9)

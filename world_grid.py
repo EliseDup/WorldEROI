@@ -135,6 +135,9 @@ def world_grid_eroi():
     # 3. Energy inputs in [EJ/year]
     # Compute the installed capacity based on the optimal rated wind speed and turbine spacing in each cell
     # Then the energy invested "per year" is the installed capacity [GW] * energy inputs [J/GW] / life time
+    df['wind_onshore_gw'] = model_methods.rated_power(df.v_r_opti, df.n_opti, df.air_density, df['wind_area_onshore'])/1e9
+    df['wind_offshore_gw'] = model_methods.rated_power(df.v_r_opti, df.n_opti, df.air_density, df['wind_area_offshore']) / 1e9
+
     df['wind_onshore_e_in'] = model_methods.E_in_wind(df.v_r_opti, df.n_opti, df.air_density, df['wind_area_onshore'],
                                                       df['inputs_gw_onshore']) * 1e-18 / model_params.wind_life_time
     df['wind_offshore_e_in'] = model_methods.E_in_wind(df.v_r_opti, df.n_opti, df.air_density, df['wind_area_offshore'],
@@ -147,11 +150,11 @@ def world_grid_eroi():
     df['wind_eroi'] = df['wind_e'] / df['wind_e_in']
 
     # -------- Compute the solar pv energy outputs, energy inputs and EROI --------#
+    df['pv_gw'] = model_params.wc_pv_panel * df['pv_area'] * model_params.pv_gcr / 1E9
     df['pv_e'] = model_methods.E_out_solar(df['GHI'], df['pv_area']* model_params.pv_gcr) * 1e-18
     if model_params.remove_operational_e:
         df['pv_e'] *= (1 - model_params.oe_pv)
-    gw_installed = model_params.wc_pv_panel * df['pv_area'] * model_params.pv_gcr / 1E9
-    df['pv_e_in'] = (model_params.pv_life_time_inputs / model_params.pv_life_time) * gw_installed * 1e-18
+    df['pv_e_in'] = (model_params.pv_life_time_inputs / model_params.pv_life_time) * df['pv_gw'] * 1e-18
     df['pv_eroi'] = df['pv_e'] / df['pv_e_in']
 
     # -------- Compute the solar csp energy outputs, energy inputs and EROI --------#
@@ -197,3 +200,7 @@ def world_rooftop_pv():
     df['pv_eroi'] = df['pv_e'] / df['pv_e_in'] #.apply(lambda x: max(x, 1))  # EROI_residential = EROI_commercial = EROI_total
 
     return df
+
+
+def country(country, df):
+    return df[(df['Country'] == country)]

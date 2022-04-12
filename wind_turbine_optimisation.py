@@ -84,6 +84,5 @@ def energyPerYear1MW(c, k, vr, n, avail_factor):
 
 
 def productionDensity(c, k, vr, n, avail_factor, air_density):
-    return installedCapacityDensity(vr, n, air_density) * model_methods.capacity_factor(vr, c,
-                                                                                        k) * model_methods.array_efficiency(
-        n) * avail_factor
+    return installedCapacityDensity(vr, n, air_density) * model_methods.capacity_factor(vr, c, k) * \
+           model_methods.array_efficiency(n) * avail_factor
