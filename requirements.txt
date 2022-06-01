@@ -3,3 +3,4 @@ pandas~=1.4.1
 matplotlib~=3.5.1
 scipy~=1.8.0
 GDAL~=3.4.2
+geopandas

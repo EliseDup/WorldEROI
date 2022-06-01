@@ -1,9 +1,10 @@
+import math
+
 import model_params
 import numpy as np
 from math import sqrt, sin, cos, pi, exp
 from scipy.special import gamma, gammainc
 from pandas import DataFrame, read_csv
-
 
 # Methods used in the WorldEROI model
 
@@ -21,7 +22,7 @@ import world_grid
 def area(latitude):
     return 2 * pi * model_params.earth_radius * model_params.earth_radius * abs(
         (latitude + model_params.resol / 2).apply(lambda x: sin(x * pi / 180)) - (
-                    latitude - model_params.resol / 2).apply(
+                latitude - model_params.resol / 2).apply(
             lambda x: sin(x * pi / 180))) * model_params.resol / 360  # [m²]
 
 
@@ -29,8 +30,8 @@ def area(latitude):
 # Capacity factor calculation depending on wind_onshore speed distribution and wind_onshore turbine specification
 def capacity_factor(v_r, c, k):
     return -np.exp(-pow(model_params.v_f / c, k)) + 3 * pow(c, 3) * gamma(3 / k) / (
-                k * (pow(v_r, 3) - pow(model_params.v_c, 3))) * (
-                       gammainc(3 / k, pow(v_r / c, k)) - gammainc(3 / k, pow(model_params.v_c / c, k)))
+            k * (pow(v_r, 3) - pow(model_params.v_c, 3))) * (
+                   gammainc(3 / k, pow(v_r / c, k)) - gammainc(3 / k, pow(model_params.v_c / c, k)))
 
 
 # Wind farm array effect = -a exp(-b * lambda) avec lambda = pi / 4*n^2
@@ -82,12 +83,59 @@ def E_out_solar(irradiation, area):
 
 
 def pv_efficiency():
-    return life_time_efficiency(model_params.eta_mono_si, model_params.pv_performance_ratio, model_params.pv_degradation_rate, model_params.pv_life_time)
+    return life_time_efficiency(model_params.eta_mono_si, model_params.pv_performance_ratio,
+                                model_params.pv_degradation_rate, model_params.pv_life_time)
 
 
 # Return the mean efficiency based on design (=lab) efficiency, performance ratio pr, annual degradation rate [%], and total life time
 def life_time_efficiency(eta, pr, degradation_rate, life_time):
     return eta * pr * (1.0 - (1.0 - degradation_rate) ** life_time) / degradation_rate / life_time
+
+
+# CSP Computation
+# Evolution of the efficiency with Solar Multiple :
+
+
+# DNI in W/m2
+def full_load_hours(dni, sm):
+    return (2.5717 * dni * 8.76 - 694) * (-0.0371 * sm * sm + 0.4171 * sm - 0.0744)
+
+
+# Efficiency with DNI was extrapolated using SAM simulations. For the Solar Multiple usually used, and for the Solar
+# Multiple that maximizes the EROI efficiency = (a*sm + b) ln DNI
+def efficiency_csp(a, b, dni):
+    return (a * math.log(dni * 8.76) + b) / 100.0
+
+
+def efficiency_csp_parabolic(dni, sm):
+    a = -3.38 * sm + 11.55
+    b = 23.85 * sm - 72.26
+    return efficiency_csp(a, b, dni)
+
+
+def efficiency_csp_parabolic_storage_12h(dni, sm):
+    a = -1.578 * sm + 11.17
+    b = 10.65 * sm - 66.33
+    return efficiency_csp(a, b, dni)
+
+
+def efficiency_csp_tower_storage_12h(dni, sm):
+    a = -1.62 * sm + 8.742
+    b = 11.01 * sm - 46.86
+    return efficiency_csp(a, b, dni)
+
+
+# Calculation Energy ADJUSTMENT FACTOR Ea = Actual Area / Reference Area = Rated Power * Solar Multiple / (Reference
+# DNI * efficiency) / Reference Area
+
+# Reference area for energy inputs calculation :
+# CSP parabolic trough excl. storage : 697286 m² * 1.3
+# CSP-Parabolic trough + 12 h molten salt: 1261286 m² * 2.7
+# CSP-Power tower + 12 h molten salt: 1443932 m² * 2.7
+# CSP parabolic trough excl. storage : Ea = (1E9*1.3/(950*0.15)) / 697286 = 15.02
+# CSP-Parabolic trough + 12 h molten salt: Ea = (1E9*2.7/(950*0.15)) / 1261286 = 15.02
+# CSP-Power tower + 12 h molten salt: Ea = (1E9*2.7/(950*0.15)) / 1443932 = 15.02
+
 
 # Build cumulated E out [EJ/year] and EROI dataframe, based on the world grid dataframe df,
 # And the name of the corresponding eout et eroi column in the world grid df
@@ -111,18 +159,28 @@ def compute_sf(df, sf_table, name):
     for i in range(len(sf.iloc[0, :])):
         df[name] += df[sf.iloc[0, i]] * sf.iloc[1, i]
         total += df[sf.iloc[0, i]]
-    df[name] = df[name]/total
+    df[name] = df[name] / total
     # Correct the suitability factor to account for the proportion of protected areas in each cell
     df[name] *= (100 - df['protected']) / 100
     return df
 
 
 def print_results_country(countries, grid):
-    unit = 1 # model_params.ej_to_twh
-    print("Country", "Area[1000km2]", "WindOnshore[TWh/y]", "InstalledCapacity[GW]", "CF[%]", "SuitableArea[km2]", "WindOffshore[TWh/y]", "InstalledCapacity[GW]", "CF[%]",
-          "SuitableArea[1000km2]",  "PV[TWh/y]", "InstalledCapacity[GW]", "CF[%]", "SuitableArea[1000km2]")
+    unit = 1  # model_params.ej_to_twh
+    print("Country", "Area[1000km2]", "WindOnshore[EJ/y]", "InstalledCapacity[GW]", "CF[%]", "SuitableArea[km2]",
+          "WindOffshore[EJ/y]", "InstalledCapacity[GW]", "CF[%]",
+          "SuitableArea[1000km2]", "PV[EJ/y]", "InstalledCapacity[GW]", "CF[%]", "SuitableArea[1000km2]")
     for c in countries:
         cells = world_grid.country(c, grid)
-        print(c, cells["Area"].sum()/1E9, cells["wind_onshore_e"].sum() * unit, cells["wind_onshore_gw"].sum(), cells["wind_area_onshore"].sum()/1E9,
-          cells["wind_offshore_e"].sum() * unit,  cells["wind_offshore_gw"].sum(), cells["wind_area_offshore"].sum()/1E9,
-          cells["pv_e"].sum() * unit,  cells["pv_gw"].sum(), cells["pv_area"].sum()/1E9)
+        if len(cells) > 0:
+            print(c, cells["Area"].sum() / 1E9, cells["wind_onshore_e"].sum() * unit, cells["wind_onshore_gw"].sum(),
+              cells["wind_onshore_e"].sum() * model_params.ej_to_twh / (
+                          cells["wind_onshore_gw"].sum() * 365 * 24 / 1000),
+              cells["wind_area_onshore"].sum() / 1E9,
+              cells["wind_offshore_e"].sum() * unit, cells["wind_offshore_gw"].sum(),
+              cells["wind_offshore_e"].sum() * model_params.ej_to_twh / (
+                          cells["wind_offshore_gw"].sum() * 365 * 24 / 1000),
+              cells["wind_area_offshore"].sum() / 1E9,
+              cells["pv_e"].sum() * unit, cells["pv_gw"].sum(),
+              cells["pv_e"].sum() * model_params.ej_to_twh / (cells["pv_gw"].sum() * 365 * 24 / 1000),
+              cells["pv_area"].sum() / 1E9)

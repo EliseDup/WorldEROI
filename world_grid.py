@@ -46,9 +46,14 @@ def world_grid():
     # Inputs files contain, for each land cover class, the corresponding % of area considered as suitable for each type
     # of RES (wind, solar pv and solar csp)
     df = model_methods.compute_sf(df, sf_files+'wind_onshore', 'wind_sf_onshore')
-    df = model_methods.compute_sf(df, sf_files + 'wind_offshore', 'wind_sf_offshore')
     df = model_methods.compute_sf(df, sf_files + 'pv', 'pv_sf')
     df = model_methods.compute_sf(df, sf_files + 'csp', 'csp_sf')
+
+    # df["wind_sf_offshore"] = 1
+    # df.loc[df['DistCoast'] <= 0, 'wind_sf_offshore'] *= 0
+    # df.loc[df['DistCoast'] > 0, 'wind_sf_onshore'] *= 0
+    # Or take the proportion of each cell covered with "water bodies"
+    df = model_methods.compute_sf(df, sf_files + 'wind_offshore', 'wind_sf_offshore')
 
     df.loc[df['Elev'] < model_params.maxWaterDepth_wind, 'wind_sf_offshore'] = 0  # Should already have been removed
     # For wind offshore, and additional constraints is based on the distance to the coast
@@ -149,6 +154,9 @@ def world_grid_eroi():
     df['wind_offshore_eroi'] = df['wind_offshore_e'] / df['wind_offshore_e_in']
     df['wind_eroi'] = df['wind_e'] / df['wind_e_in']
 
+    # 5. Capacity factors = Energy outputs / Energy outputs at nominal power
+    df['wind_cf'] = df['wind_onshore_e'] * model_params.ej_to_twh / (df['wind_onshore_gw'] * 365 * 24 / 1000) + df['wind_offshore_e'] * model_params.ej_to_twh / (df['wind_offshore_gw'] * 365 * 24 / 1000)
+
     # -------- Compute the solar pv energy outputs, energy inputs and EROI --------#
     df['pv_gw'] = model_params.wc_pv_panel * df['pv_area'] * model_params.pv_gcr / 1E9
     df['pv_e'] = model_methods.E_out_solar(df['GHI'], df['pv_area']* model_params.pv_gcr) * 1e-18
@@ -157,8 +165,11 @@ def world_grid_eroi():
     df['pv_e_in'] = (model_params.pv_life_time_inputs / model_params.pv_life_time) * df['pv_gw'] * 1e-18
     df['pv_eroi'] = df['pv_e'] / df['pv_e_in']
 
+    df['pv_cf'] = df['pv_e'] * model_params.ej_to_twh / (df['pv_gw'].sum() * 365 * 24 / 1000)
+
     # -------- Compute the solar csp energy outputs, energy inputs and EROI --------#
     # TODO
+    # df['csp_e'] =
 
 
     # Replace Nan values by 0
