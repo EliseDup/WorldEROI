@@ -169,6 +169,7 @@ def world_grid_eroi():
 
     # -------- Compute the solar csp energy outputs, energy inputs and EROI --------#
     # TODO
+    df['csp_sm'] = (df['DNI']).apply(lambda x: model_methods.optimal_sm_csp(x*365))
     # df['csp_e'] =
 
 

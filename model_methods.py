@@ -83,7 +83,7 @@ def E_out_solar(irradiation, area):
 
 
 def pv_efficiency():
-    return life_time_efficiency(model_params.eta_mono_si, model_params.pv_performance_ratio,
+    return life_time_efficiency(model_params.pv_design_efficiency, model_params.pv_performance_ratio,
                                 model_params.pv_degradation_rate, model_params.pv_life_time)
 
 
@@ -92,49 +92,52 @@ def life_time_efficiency(eta, pr, degradation_rate, life_time):
     return eta * pr * (1.0 - (1.0 - degradation_rate) ** life_time) / degradation_rate / life_time
 
 
-# CSP Computation
-# Evolution of the efficiency with Solar Multiple :
-
-
-# DNI in W/m2
-def full_load_hours(dni, sm):
-    return (2.5717 * dni * 8.76 - 694) * (-0.0371 * sm * sm + 0.4171 * sm - 0.0744)
-
-
+# ---- CSP Computation
 # Efficiency with DNI was extrapolated using SAM simulations. For the Solar Multiple usually used, and for the Solar
 # Multiple that maximizes the EROI efficiency = (a*sm + b) ln DNI
-def efficiency_csp(a, b, dni):
-    return (a * math.log(dni * 8.76) + b) / 100.0
+# DNI in kWh/m2/year
+def efficiency_csp(dni, sm):
+    return (model_params.a_csp(sm) * math.log(dni) + model_params.b_csp(sm)) / 100.0
 
 
-def efficiency_csp_parabolic(dni, sm):
-    a = -3.38 * sm + 11.55
-    b = 23.85 * sm - 72.26
-    return efficiency_csp(a, b, dni)
+# Rated power of the power block of a CSP plant depending on a given solar multiple
+# The power block is designed to provide its nominal power at a design irradiance (in general 950W/m^2)
+# Then the collector (reflective) area is over / under scaled based on local conditions (via the solar multiple)
+# Rated power [W] = Reflective Area [m^2] * Design Irradiance [W/m^2] * Design Efficiency [%] / SM
+def rated_power_csp(collector_area, sm):
+    return collector_area * (model_params.csp_design_irradiance * model_params.csp_design_efficiency) / sm
 
 
-def efficiency_csp_parabolic_storage_12h(dni, sm):
-    a = -1.578 * sm + 11.17
-    b = 10.65 * sm - 66.33
-    return efficiency_csp(a, b, dni)
+# Inverse relationship
+# Reflective Area [m^2] = Rated power [W] / (Design Irradiance [W/m^2] * Design Efficiency [%] / SM)
+def reflective_area_csp(rated_power, sm):
+    return rated_power / (model_params.csp_design_irradiance * model_params.csp_design_efficiency / sm)
 
 
-def efficiency_csp_tower_storage_12h(dni, sm):
-    a = -1.62 * sm + 8.742
-    b = 11.01 * sm - 46.86
-    return efficiency_csp(a, b, dni)
+# Prevent the model to produce at CF > 100% (it can happen due to the extrapolation model with extreme values of DNI and SM)
+def e_out_csp(area, dni, sm):
+    e_out_max = rated_power_csp(area, sm) * 365 * 24 * model_params.watth_to_joules
+    e_out = np.minimum(e_out_max, area * dni * life_time_efficiency(efficiency_csp(dni, sm), 1.0, model_params.csp_degradation_rate,
+                                                  model_params.csp_life_time) * model_params.watth_to_joules * 1000)
+    return e_out
 
 
-# Calculation Energy ADJUSTMENT FACTOR Ea = Actual Area / Reference Area = Rated Power * Solar Multiple / (Reference
-# DNI * efficiency) / Reference Area
+# Return the EROI of a CSP plant (technology defined in model_params) (DNI in kWH/m2/year)
+def eroi_csp(dni, sm):
+    area_sm = reflective_area_csp(1E9, sm)
+    area_ratio = area_sm/model_params.csp_default_aperture_area
+    e_out = e_out_csp(area_sm, dni, sm)
+    e_in = e_out * model_params.oe_csp + (model_params.csp_life_time_inputs + area_ratio * model_params.csp_variable_inputs)/model_params.csp_life_time
+    return e_out/e_in
 
-# Reference area for energy inputs calculation :
-# CSP parabolic trough excl. storage : 697286 m² * 1.3
-# CSP-Parabolic trough + 12 h molten salt: 1261286 m² * 2.7
-# CSP-Power tower + 12 h molten salt: 1443932 m² * 2.7
-# CSP parabolic trough excl. storage : Ea = (1E9*1.3/(950*0.15)) / 697286 = 15.02
-# CSP-Parabolic trough + 12 h molten salt: Ea = (1E9*2.7/(950*0.15)) / 1261286 = 15.02
-# CSP-Power tower + 12 h molten salt: Ea = (1E9*2.7/(950*0.15)) / 1443932 = 15.02
+
+
+# Return the solar multiple that maximises the EROI for a given DNI in kWH/m2/year
+def optimal_sm_csp(dni):
+    if dni == 0:
+        return model_params.csp_default_sm
+    else:
+        return model_params.sm_range[np.where(np.amax(eroi_csp(dni, model_params.sm_range)))[0]]
 
 
 # Build cumulated E out [EJ/year] and EROI dataframe, based on the world grid dataframe df,
