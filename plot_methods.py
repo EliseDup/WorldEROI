@@ -3,6 +3,7 @@ import model_methods
 import geopandas as gpd
 from shapely.geometry import Point, Polygon
 
+
 def plot_e_out_eroi_wind(df):
     plt.figure()
     df_onshore = model_methods.df_cum_eout_eroi(df, "wind_onshore_e", "wind_onshore_eroi")
@@ -18,8 +19,10 @@ def plot_e_out_eroi_wind(df):
     plt.show()
 
 
-def plot_e_out_eroi_pv(df):
-    df_solar = model_methods.df_cum_eout_eroi(df, 'pv_e', 'pv_eroi')
+# e_label = pv_e or csp_e
+# eroi_label = pv_eroi or csp_eroi
+def plot_e_out_eroi_solar(df, e_label, eroi_label):
+    df_solar = model_methods.df_cum_eout_eroi(df, e_label, eroi_label)
     plt.figure()
     plt.plot(df_solar['e_cum'], df_solar['eroi'])
     plt.grid(True, color="#93a1a1", alpha=0.3)

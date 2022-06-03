@@ -67,8 +67,10 @@ def world_grid():
     # PV requires slope <= 30%, CSP requires slope <= 2%
     df = model_methods.compute_sf(df, sf_files+'slope_pv', 'slope_pv_sf')
     df['pv_sf'] *= df['slope_pv_sf']
+    df['pv_sf'] *= (df['GHI'] > 0)
     df = model_methods.compute_sf(df, sf_files + 'slope_csp', 'slope_csp_sf')
     df['csp_sf'] *= df['slope_csp_sf']
+    df['csp_sf'] *= (df['DNI'] > 0)
 
     # Compute suitable area for each RES based on the total area [m²] and on the suitability factor [%]
     df['wind_area_onshore'] = df['Area'] * df['wind_sf_onshore']  # [m²]

@@ -137,7 +137,7 @@ def optimal_sm_csp(dni):
     if dni == 0:
         return model_params.csp_default_sm
     else:
-        return model_params.sm_range[np.where(np.amax(eroi_csp(dni, model_params.sm_range)))[0]]
+        return model_params.sm_range[np.where(np.amax(eroi_csp(dni, model_params.sm_range)))[0]][0]
 
 
 # Build cumulated E out [EJ/year] and EROI dataframe, based on the world grid dataframe df,
