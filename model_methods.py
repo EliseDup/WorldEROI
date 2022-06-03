@@ -97,7 +97,7 @@ def life_time_efficiency(eta, pr, degradation_rate, life_time):
 # Multiple that maximizes the EROI efficiency = (a*sm + b) ln DNI
 # DNI in kWh/m2/year
 def efficiency_csp(dni, sm):
-    return (model_params.a_csp(sm) * math.log(dni) + model_params.b_csp(sm)) / 100.0
+    return (model_params.a_csp(sm) * np.log(dni) + model_params.b_csp(sm)) / 100.0
 
 
 # Rated power of the power block of a CSP plant depending on a given solar multiple
@@ -116,20 +116,20 @@ def reflective_area_csp(rated_power, sm):
 
 # Prevent the model to produce at CF > 100% (it can happen due to the extrapolation model with extreme values of DNI and SM)
 def e_out_csp(area, dni, sm):
-    e_out_max = rated_power_csp(area, sm) * 365 * 24 * model_params.watth_to_joules
-    e_out = np.minimum(e_out_max, area * dni * life_time_efficiency(efficiency_csp(dni, sm), 1.0, model_params.csp_degradation_rate,
-                                                  model_params.csp_life_time) * model_params.watth_to_joules * 1000)
-    return e_out
+    if dni == 0:
+        return 0
+    else:
+        return area * dni * life_time_efficiency(efficiency_csp(dni, sm), 1.0, model_params.csp_degradation_rate,
+                                                 model_params.csp_life_time) * model_params.watth_to_joules * 1000
 
 
-# Return the EROI of a CSP plant (technology defined in model_params) (DNI in kWH/m2/year)
+# Return the EROI of a 1GW CSP plant (technology defined in model_params) (DNI in kWH/m2/year)
 def eroi_csp(dni, sm):
     area_sm = reflective_area_csp(1E9, sm)
-    area_ratio = area_sm/model_params.csp_default_aperture_area
-    e_out = e_out_csp(area_sm, dni, sm)
-    e_in = e_out * model_params.oe_csp + (model_params.csp_life_time_inputs + area_ratio * model_params.csp_variable_inputs)/model_params.csp_life_time
-    return e_out/e_in
-
+    e_out_max = 1E9 * 365 * 24 * model_params.watth_to_joules
+    e_out = np.minimum(e_out_max, e_out_csp(area_sm, dni, sm))
+    e_in = (model_params.csp_life_time_inputs + area_sm / model_params.csp_default_aperture_area * model_params.csp_variable_inputs) / model_params.csp_life_time
+    return e_out / e_in
 
 
 # Return the solar multiple that maximises the EROI for a given DNI in kWH/m2/year
@@ -177,13 +177,13 @@ def print_results_country(countries, grid):
         cells = world_grid.country(c, grid)
         if len(cells) > 0:
             print(c, cells["Area"].sum() / 1E9, cells["wind_onshore_e"].sum() * unit, cells["wind_onshore_gw"].sum(),
-              cells["wind_onshore_e"].sum() * model_params.ej_to_twh / (
+                  cells["wind_onshore_e"].sum() * model_params.ej_to_twh / (
                           cells["wind_onshore_gw"].sum() * 365 * 24 / 1000),
-              cells["wind_area_onshore"].sum() / 1E9,
-              cells["wind_offshore_e"].sum() * unit, cells["wind_offshore_gw"].sum(),
-              cells["wind_offshore_e"].sum() * model_params.ej_to_twh / (
+                  cells["wind_area_onshore"].sum() / 1E9,
+                  cells["wind_offshore_e"].sum() * unit, cells["wind_offshore_gw"].sum(),
+                  cells["wind_offshore_e"].sum() * model_params.ej_to_twh / (
                           cells["wind_offshore_gw"].sum() * 365 * 24 / 1000),
-              cells["wind_area_offshore"].sum() / 1E9,
-              cells["pv_e"].sum() * unit, cells["pv_gw"].sum(),
-              cells["pv_e"].sum() * model_params.ej_to_twh / (cells["pv_gw"].sum() * 365 * 24 / 1000),
-              cells["pv_area"].sum() / 1E9)
+                  cells["wind_area_offshore"].sum() / 1E9,
+                  cells["pv_e"].sum() * unit, cells["pv_gw"].sum(),
+                  cells["pv_e"].sum() * model_params.ej_to_twh / (cells["pv_gw"].sum() * 365 * 24 / 1000),
+                  cells["pv_area"].sum() / 1E9)

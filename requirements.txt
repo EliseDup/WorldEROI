@@ -1,6 +1,6 @@
-numpy~=1.22.3
-pandas~=1.4.1
-matplotlib~=3.5.1
-scipy~=1.8.0
-GDAL~=3.4.2
-geopandas
+numpy==1.22.4
+pandas==1.4.2
+matplotlib==3.5.2
+scipy==1.8.1
+geopandas~=0.10.2
+shapely==1.8.2

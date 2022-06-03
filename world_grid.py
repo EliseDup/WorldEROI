@@ -169,9 +169,14 @@ def world_grid_eroi():
 
     # -------- Compute the solar csp energy outputs, energy inputs and EROI --------#
     # TODO
-    df['csp_sm'] = (df['DNI']).apply(lambda x: model_methods.optimal_sm_csp(x*365))
-    # df['csp_e'] =
-
+    df['csp_sm'] = (df['DNI'] > 0) * (df['DNI']).apply(lambda x: model_methods.optimal_sm_csp(x*365)) + (df['DNI'] <= 0) * model_params.csp_default_sm
+    df['csp_eff'] = (df['DNI'] > 0) * model_methods.life_time_efficiency(model_methods.efficiency_csp(df['DNI']*365, df['csp_sm']), 1.0, model_params.csp_degradation_rate, model_params.csp_life_time) + (df['DNI'] <= 0) * 0
+    df['csp_e'] = (df['DNI'] > 0) * df['DNI']*365 * df['csp_eff'] * df['csp_area'] * model_params.csp_gcr * model_params.watth_to_joules * 1000 * 1e-18
+    if model_params.remove_operational_e:
+        df['csp_e'] *= (1 - model_params.oe_csp)
+    df['csp_gw'] = (df['DNI'] > 0) * model_methods.rated_power_csp(df['csp_area']* model_params.csp_gcr, df['csp_sm']) / 1E9
+    df['csp_e_in'] = (model_params.csp_life_time_inputs * df['csp_gw'] + model_params.csp_variable_inputs * df['csp_area']* model_params.csp_gcr / model_params.csp_default_aperture_area) / model_params.csp_life_time * 1e-18
+    df['csp_eroi'] = df['csp_e'] / df['csp_e_in']
 
     # Replace Nan values by 0
     # TODO : check why these NaNs occur
