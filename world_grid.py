@@ -152,6 +152,7 @@ def world_grid_eroi():
     df['wind_e_in'] = df['wind_onshore_e_in'] + df['wind_offshore_e_in']
 
     # 4. EROI = Energy outputs [EJ/year] / Energy inputs [EJ/year]
+    #  EROI "variants": GEER, GER, NEER, NER, depending if you exclude or not operational energy at the numerator and denominator
     df['wind_onshore_eroi'] = df['wind_onshore_e'] / df['wind_onshore_e_in']
     df['wind_offshore_eroi'] = df['wind_offshore_e'] / df['wind_offshore_e_in']
     df['wind_eroi'] = df['wind_e'] / df['wind_e_in']
@@ -170,7 +171,7 @@ def world_grid_eroi():
     df['pv_cf'] = df['pv_e'] * model_params.ej_to_twh / (df['pv_gw'].sum() * 365 * 24 / 1000)
 
     # -------- Compute the solar csp energy outputs, energy inputs and EROI --------#
-    # TODO
+    # First compute the "optimal" solar multiple
     df['csp_sm'] = (df['DNI'] > 0) * (df['DNI']).apply(lambda x: model_methods.optimal_sm_csp(x*365)) + (df['DNI'] <= 0) * model_params.csp_default_sm
     df['csp_eff'] = (df['DNI'] > 0) * model_methods.life_time_efficiency(model_methods.efficiency_csp(df['DNI']*365, df['csp_sm']), 1.0, model_params.csp_degradation_rate, model_params.csp_life_time) + (df['DNI'] <= 0) * 0
     df['csp_e'] = (df['DNI'] > 0) * df['DNI']*365 * df['csp_eff'] * df['csp_area'] * model_params.csp_gcr * model_params.watth_to_joules * 1000 * 1e-18
@@ -216,7 +217,7 @@ def world_rooftop_pv():
 
     df['pv_e'] = df['residential_e'] + df['commercial_e']
     df['pv_e_in'] = df['residential_e_in'] + df['commercial_e_in']
-    df['pv_eroi'] = df['pv_e'] / df['pv_e_in'] #.apply(lambda x: max(x, 1))  # EROI_residential = EROI_commercial = EROI_total
+    df['pv_eroi'] = df['pv_e'] / df['pv_e_in']
 
     return df
 

@@ -56,15 +56,17 @@ onshoreOMKm = 21.3 * 1E9  # J / GW / km
 # ---- Solar PV : 2 technologies are available : mono or polycrystalline.
 # Comment / Uncomment to select the technology you want to use in the model
 # 1. Monocrystalline PV
+
 pv_life_time_inputs = (8880746 + 5596459 + 61279 + 61279 + 469257 + 45252*pv_life_time) * 1E9  # J / GW
 pv_design_efficiency = 0.24
 pv_degradation_rate = 0.36/100
 
 # 2. Polycrystalline PV
-# pv_life_time_inputs = (12211495 + 4394479 + 71652 + 71652 + 652934+ 52911.81*pv_life_time) * 1E9  # J / GW
-# pv_design_efficiency = 0.17
-# pv_degradation_rate = 0.5 / 100
-
+"""
+pv_life_time_inputs = (12211495 + 4394479 + 71652 + 71652 + 652934 + 52911.81*pv_life_time) * 1E9  # J / GW
+pv_design_efficiency = 0.17
+pv_degradation_rate = 0.5 / 100
+"""
 
 # ---- Solar CSP : 3 technologies are available: here you can select the one you want by adding / removing block comments
 # By default the "best" one is selected, i.e. solar tower with 12h of thermal energy storage
@@ -73,30 +75,34 @@ pv_degradation_rate = 0.36/100
 # solar field
 
 # 1. CSP Parabolic with no storage
-# def a_csp(sm):
-#   return -3.38 * sm + 11.55
-# def b_csp(sm):
-#   return 23.85 * sm - 72.26
-# csp_life_time_inputs = (4742245 + 3178 + 114400 + 106001 + 732751 + 89118 * csp_life_time) * 1E9# J / GW
-# csp_design_efficiency = 0.22
-# csp_default_sm = 1.3
-# csp_transport_variable = 479183 * 1E9  # J
-# csp_construction_variable = (6033371 + 6732247) * 1E9 # J
-
-
+"""
+def a_csp(sm):
+   return -3.38 * sm + 11.55
+def b_csp(sm):
+  return 23.85 * sm - 72.26
+csp_life_time_inputs = (4742245 + 3178 + 114400 + 106001 + 732751 + 89118 * csp_life_time) * 1E9# J / GW
+csp_design_efficiency = 0.22
+csp_default_sm = 1.3
+csp_transport_variable = 479183 * 1E9  # J
+csp_construction_variable = (6033371 + 6732247) * 1E9 # J
+sm_range = np.arange(0.5, 2.6, 0.1)
+"""
 # 2. CSP Parabolic with 12h of thermal storage
-# def a_csp(sm):
-#   return -1.578 * sm + 11.17
-# def b_csp(sm):
-#   return 10.65 * sm - 66.33
-# csp_life_time_inputs = (5415779 + 13500041 + 220157 + 237600 + (756412 + 1080164) + 183720 * csp_life_time) * 1E9 # J / GW
-# csp_design_efficiency = 0.22
-# csp_default_sm = 2.7
-# csp_transport_variable = 930204 * 1E9  # J
-# csp_construction_variable = (11434969 + 4412439) * 1E9 # J
-
+"""
+def a_csp(sm):
+    return -1.578 * sm + 11.17
+def b_csp(sm):
+    return 10.65 * sm - 66.33
+csp_life_time_inputs = (5415779 + 13500041 + 220157 + 237600 + (756412 + 1080164) + 183720 * csp_life_time) * 1E9 # J / GW
+csp_design_efficiency = 0.22
+csp_default_sm = 2.7
+csp_transport_variable = 930204 * 1E9  # J
+csp_construction_variable = (11434969 + 4412439) * 1E9 # J
+sm_range = np.arange(0.5, 4.1, 0.1)
+"""
 
 # 3. CSP Tower with 12h of thermal storage (by default)
+
 def a_csp(sm):
     return -1.62 * sm + 8.742
 def b_csp(sm):
@@ -107,10 +113,11 @@ csp_design_efficiency = 0.21
 csp_default_sm = 2.7
 csp_transport_variable = 457262 * 1E9  # J
 csp_construction_variable = (7751182 + 3642818) * 1E9  # J
+sm_range = np.arange(0.5, 4.1, 0.1)
 
 # Common to all csp technologies
 # The default aperture area (with default SM) corresponds to the value of transport and construction variable.
 # These inputs are then scaled up / down based on the actual solar mutliple
 csp_default_aperture_area = 1E9 * csp_default_sm / (csp_design_irradiance * csp_design_efficiency)
 csp_variable_inputs = csp_transport_variable + csp_construction_variable
-sm_range = np.arange(0.5, 4.1, 0.1)
+

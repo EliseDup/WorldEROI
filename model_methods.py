@@ -127,7 +127,7 @@ def e_out_csp(area, dni, sm):
 def eroi_csp(dni, sm):
     area_sm = reflective_area_csp(1E9, sm)
     e_out_max = 1E9 * 365 * 24 * model_params.watth_to_joules
-    e_out = np.minimum(e_out_max, e_out_csp(area_sm, dni, sm))
+    e_out = np.maximum(0, np.minimum(e_out_max, e_out_csp(area_sm, dni, sm)))
     e_in = (model_params.csp_life_time_inputs + area_sm / model_params.csp_default_aperture_area * model_params.csp_variable_inputs) / model_params.csp_life_time
     return e_out / e_in
 
@@ -137,7 +137,9 @@ def optimal_sm_csp(dni):
     if dni == 0:
         return model_params.csp_default_sm
     else:
-        return model_params.sm_range[np.where(np.amax(eroi_csp(dni, model_params.sm_range)))[0]][0]
+        eroi_range = eroi_csp(dni, model_params.sm_range)
+        max_index = np.where(eroi_range == np.amax(eroi_range))[0][0]
+        return model_params.sm_range[max_index]
 
 
 # Build cumulated E out [EJ/year] and EROI dataframe, based on the world grid dataframe df,
