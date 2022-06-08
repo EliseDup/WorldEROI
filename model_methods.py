@@ -54,7 +54,7 @@ def array_efficiency(n):
 # n = turbine spacing in # rotor diameter
 # Capacity density [W/m2] = Pr / (nD)^2 =  1/2 * Cp_max * rho(elevation) * PI / (4 * n^2) * v_rated^3
 def rated_power(v_r, n, rho, area):
-    return 1 / 2 * model_params.C_pmax * rho * pi / (4 * n * n) * pow(v_r, 3) * area
+    return 1 / 2 * model_params.c_p_max * rho * pi / (4 * n * n) * pow(v_r, 3) * area
 
 
 # Energy produced on a given area over wind_onshore turbine life time [J/year]
@@ -128,8 +128,9 @@ def eroi_csp(dni, sm):
     area_sm = reflective_area_csp(1E9, sm)
     e_out_max = 1E9 * 365 * 24 * model_params.watth_to_joules
     e_out = np.maximum(0, np.minimum(e_out_max, e_out_csp(area_sm, dni, sm)))
-    e_in = (model_params.csp_life_time_inputs + area_sm / model_params.csp_default_aperture_area * model_params.csp_variable_inputs) / model_params.csp_life_time
-    return e_out / e_in
+    e_in = (
+                       model_params.csp_life_time_inputs + area_sm / model_params.csp_default_aperture_area * model_params.csp_variable_inputs) / model_params.csp_life_time
+    return eroi(e_out, e_in, e_out*model_params.oe_csp)
 
 
 # Return the solar multiple that maximises the EROI for a given DNI in kWH/m2/year
@@ -168,6 +169,17 @@ def compute_sf(df, sf_table, name):
     # Correct the suitability factor to account for the proportion of protected areas in each cell
     df[name] *= (100 - df['protected']) / 100
     return df
+
+
+# EROI calculation based on the hypothesis for the model_params file
+# (i.e. to include of not direct energy inputs in the numerator)
+def eroi(e_out, e_in, o_e):
+    if model_params.remove_operational_e:
+        e_out_gross = e_out + o_e  # The numerator is the gross energy outputs no add operational e if they were removed before.
+    if model_params.calculate_geer:
+        return e_out_gross / e_in
+    else:
+        return e_out_gross / (e_in + o_e)
 
 
 def print_results_country(countries, grid):

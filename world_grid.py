@@ -35,7 +35,7 @@ def world_grid():
             df['Country'] != 'French Southern & Antarctic Lands')]
     df = df.loc[~df['Country'].apply(lambda x: 'Island' in str(x))]
     df = df.loc[~df['Country'].apply(lambda x: 'Is.' in str(x))]
-    df = df.loc[df['Elev'] >= model_params.maxWaterDepth_wind]
+    df = df.loc[df['Elev'] >= model_params.max_water_depth]
     df = df.loc[df['v_r_opti'].isnull() == False]  # For some of these cells, the suppression is very debatable
     # (e.g. in the Caspian Sea)
 
@@ -55,7 +55,7 @@ def world_grid():
     # Or take the proportion of each cell covered with "water bodies"
     df = model_methods.compute_sf(df, sf_files + 'wind_offshore', 'wind_sf_offshore')
 
-    df.loc[df['Elev'] < model_params.maxWaterDepth_wind, 'wind_sf_offshore'] = 0  # Should already have been removed
+    df.loc[df['Elev'] < model_params.max_water_depth, 'wind_sf_offshore'] = 0  # Should already have been removed
     # For wind offshore, and additional constraints is based on the distance to the coast
     # EU Report 4 % of 0 - 10 km, 10 % of 10 - 50 km, 25 % of > 50 km
     # NREL Report 10 % of 0 - 5 Nm, 33 % of 5 - 20 Nm, 67 % of > 20 Nm
@@ -153,9 +153,9 @@ def world_grid_eroi():
 
     # 4. EROI = Energy outputs [EJ/year] / Energy inputs [EJ/year]
     #  EROI "variants": GEER, GER, NEER, NER, depending if you exclude or not operational energy at the numerator and denominator
-    df['wind_onshore_eroi'] = df['wind_onshore_e'] / df['wind_onshore_e_in']
-    df['wind_offshore_eroi'] = df['wind_offshore_e'] / df['wind_offshore_e_in']
-    df['wind_eroi'] = df['wind_e'] / df['wind_e_in']
+    df['wind_onshore_eroi'] = model_methods.eroi(df['wind_onshore_e'], df['wind_onshore_e_in'], model_params.oe_wind_onshore*df['wind_onshore_e'])
+    df['wind_offshore_eroi'] = model_methods.eroi(df['wind_offshore_e'], df['wind_offshore_e_in'], model_params.oe_wind_offshore*df['wind_offshore_e'])
+    df['wind_eroi'] = model_methods.eroi(df['wind_e'], df['wind_e_in'], model_params.oe_wind_onshore*df['wind_onshore_e']+model_params.oe_wind_offshore*df['wind_offshore_e'])
 
     # 5. Capacity factors = Energy outputs / Energy outputs at nominal power
     df['wind_cf'] = df['wind_onshore_e'] * model_params.ej_to_twh / (df['wind_onshore_gw'] * 365 * 24 / 1000) + df['wind_offshore_e'] * model_params.ej_to_twh / (df['wind_offshore_gw'] * 365 * 24 / 1000)
@@ -166,7 +166,7 @@ def world_grid_eroi():
     if model_params.remove_operational_e:
         df['pv_e'] *= (1 - model_params.oe_pv)
     df['pv_e_in'] = (model_params.pv_life_time_inputs / model_params.pv_life_time) * df['pv_gw'] * 1e-18
-    df['pv_eroi'] = df['pv_e'] / df['pv_e_in']
+    df['pv_eroi'] = model_methods.eroi(df['pv_e'], df['pv_e_in'], df['pv_e'] * model_params.oe_pv)
 
     df['pv_cf'] = df['pv_e'] * model_params.ej_to_twh / (df['pv_gw'].sum() * 365 * 24 / 1000)
 
@@ -179,7 +179,7 @@ def world_grid_eroi():
         df['csp_e'] *= (1 - model_params.oe_csp)
     df['csp_gw'] = (df['DNI'] > 0) * model_methods.rated_power_csp(df['csp_area']* model_params.csp_gcr, df['csp_sm']) / 1E9
     df['csp_e_in'] = (model_params.csp_life_time_inputs * df['csp_gw'] + model_params.csp_variable_inputs * df['csp_area']* model_params.csp_gcr / model_params.csp_default_aperture_area) / model_params.csp_life_time * 1e-18
-    df['csp_eroi'] = df['csp_e'] / df['csp_e_in']
+    df['csp_eroi'] = model_methods.eroi(df['csp_e'], df['csp_e_in'], df['csp_e']*model_params.oe_csp)
 
     # Replace Nan values by 0
     # TODO : check why these NaNs occur
