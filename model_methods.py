@@ -130,7 +130,7 @@ def eroi_csp(dni, sm):
     e_out = np.maximum(0, np.minimum(e_out_max, e_out_csp(area_sm, dni, sm)))
     e_in = (
                        model_params.csp_life_time_inputs + area_sm / model_params.csp_default_aperture_area * model_params.csp_variable_inputs) / model_params.csp_life_time
-    return eroi(e_out, e_in, e_out*model_params.oe_csp)
+    return eroi(e_out*(1-model_params.remove_operational_e*model_params.oe_csp), e_in, model_params.oe_csp)
 
 
 # Return the solar multiple that maximises the EROI for a given DNI in kWH/m2/year
@@ -171,15 +171,14 @@ def compute_sf(df, sf_table, name):
     return df
 
 
-# EROI calculation based on the hypothesis for the model_params file
+# EROI calculation based on the hypothesis for the model_params file,
+# E_out and E_in in J, o_e in [J/J]
 # (i.e. to include of not direct energy inputs in the numerator)
+# E_out = energy outputs * (1 - oe) (if remove operational energy)
+# Thus E_out_gross = E_out / (1 - oe) (if remove operational energy)
 def eroi(e_out, e_in, o_e):
-    if model_params.remove_operational_e:
-        e_out_gross = e_out + o_e  # The numerator is the gross energy outputs no add operational e if they were removed before.
-    if model_params.calculate_geer:
-        return e_out_gross / e_in
-    else:
-        return e_out_gross / (e_in + o_e)
+    e_out_gross = e_out / (1-model_params.remove_operational_e*o_e)  # The numerator is the gross energy outputs no add operational e if they were removed before.
+    return e_out_gross / (e_in + (not model_params.calculate_geer)*o_e*e_out_gross)
 
 
 def print_results_country(countries, grid):

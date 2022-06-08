@@ -153,9 +153,14 @@ def world_grid_eroi():
 
     # 4. EROI = Energy outputs [EJ/year] / Energy inputs [EJ/year]
     #  EROI "variants": GEER, GER, NEER, NER, depending if you exclude or not operational energy at the numerator and denominator
-    df['wind_onshore_eroi'] = model_methods.eroi(df['wind_onshore_e'], df['wind_onshore_e_in'], model_params.oe_wind_onshore*df['wind_onshore_e'])
-    df['wind_offshore_eroi'] = model_methods.eroi(df['wind_offshore_e'], df['wind_offshore_e_in'], model_params.oe_wind_offshore*df['wind_offshore_e'])
-    df['wind_eroi'] = model_methods.eroi(df['wind_e'], df['wind_e_in'], model_params.oe_wind_onshore*df['wind_onshore_e']+model_params.oe_wind_offshore*df['wind_offshore_e'])
+    df['wind_onshore_eroi'] = model_methods.eroi(df['wind_onshore_e'], df['wind_onshore_e_in'], model_params.oe_wind_onshore)
+    df['wind_offshore_eroi'] = model_methods.eroi(df['wind_offshore_e'], df['wind_offshore_e_in'], model_params.oe_wind_offshore)
+    # More tricky to calculate the global eroi of wind as a given cell may contain both onshore and offshore wind farm
+    # And their operational cost are different
+
+    e_out = df['wind_onshore_e'] / (1-model_params.remove_operational_e*model_params.oe_wind_onshore) + df['wind_offshore_e'] / (1-model_params.remove_operational_e*model_params.oe_wind_offshore)
+    operation_e = df['wind_onshore_e'] /(1-model_params.remove_operational_e*model_params.oe_wind_onshore) * model_params.oe_wind_onshore + df['wind_offshore_e'] /(1-model_params.remove_operational_e*model_params.oe_wind_offshore) * model_params.oe_wind_offshore
+    df['wind_eroi'] = e_out / (df['wind_onshore_e_in'] + df['wind_offshore_e_in'] + (not model_params.calculate_geer) * operation_e)
 
     # 5. Capacity factors = Energy outputs / Energy outputs at nominal power
     df['wind_cf'] = df['wind_onshore_e'] * model_params.ej_to_twh / (df['wind_onshore_gw'] * 365 * 24 / 1000) + df['wind_offshore_e'] * model_params.ej_to_twh / (df['wind_offshore_gw'] * 365 * 24 / 1000)
@@ -166,7 +171,7 @@ def world_grid_eroi():
     if model_params.remove_operational_e:
         df['pv_e'] *= (1 - model_params.oe_pv)
     df['pv_e_in'] = (model_params.pv_life_time_inputs / model_params.pv_life_time) * df['pv_gw'] * 1e-18
-    df['pv_eroi'] = model_methods.eroi(df['pv_e'], df['pv_e_in'], df['pv_e'] * model_params.oe_pv)
+    df['pv_eroi'] = model_methods.eroi(df['pv_e'], df['pv_e_in'], model_params.oe_pv)
 
     df['pv_cf'] = df['pv_e'] * model_params.ej_to_twh / (df['pv_gw'].sum() * 365 * 24 / 1000)
 
@@ -179,7 +184,7 @@ def world_grid_eroi():
         df['csp_e'] *= (1 - model_params.oe_csp)
     df['csp_gw'] = (df['DNI'] > 0) * model_methods.rated_power_csp(df['csp_area']* model_params.csp_gcr, df['csp_sm']) / 1E9
     df['csp_e_in'] = (model_params.csp_life_time_inputs * df['csp_gw'] + model_params.csp_variable_inputs * df['csp_area']* model_params.csp_gcr / model_params.csp_default_aperture_area) / model_params.csp_life_time * 1e-18
-    df['csp_eroi'] = model_methods.eroi(df['csp_e'], df['csp_e_in'], df['csp_e']*model_params.oe_csp)
+    df['csp_eroi'] = model_methods.eroi(df['csp_e'], df['csp_e_in'], model_params.oe_csp)
 
     # Replace Nan values by 0
     # TODO : check why these NaNs occur
