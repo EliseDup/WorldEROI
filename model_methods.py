@@ -181,6 +181,18 @@ def eroi(e_out, e_in, o_e):
     return e_out_gross / (e_in + (not model_params.calculate_geer)*o_e*e_out_gross)
 
 
+# Return the potential (found in column named 'e_out') based on a minimum eroi criterai
+def potential(df, e_out, eroi, eroi_min):
+    return df.loc[df[eroi] >= eroi_min, e_out].sum()
+
+
+def print_potential(df, eroi_min):
+    print("Wind onshore", potential(df, 'wind_onshore_e', 'wind_onshore_eroi', eroi_min))
+    print("Wind offshore", potential(df, 'wind_offshore_e', 'wind_offshore_eroi', eroi_min))
+    print("PV", potential(df, 'pv_e', 'pv_eroi', eroi_min))
+    print("CSP", potential(df, 'csp_e', 'csp_eroi', eroi_min))
+
+
 def print_results_country(countries, grid):
     unit = 1  # model_params.ej_to_twh
     print("Country", "Area[1000km2]", "WindOnshore[EJ/y]", "InstalledCapacity[GW]", "CF[%]", "SuitableArea[km2]",
