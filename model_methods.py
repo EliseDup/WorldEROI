@@ -39,11 +39,11 @@ def capacity_factor(v_r, c, k):
 #     a10, b10 = 0.9871, 11.7542
 #     a50, b50 = 0.9838, 42.5681
 #     aInf, bInt = 0.9619, 88.9204
-a50, b50 = 0.9838, 42.5681
+a, b = 0.9838, 42.5681
 
 
 def array_efficiency(n):
-    return a50 * np.exp(-b50 * pi / (4 * n * n))  # We assume that array size = 50x50
+    return a * np.exp(-b * pi / (4 * n * n))  # We assume that array size = 50x50
 
 
 # Calculation of the installed Rated Power on a given Area [W], given the optimal rated wind_onshore speed and spacing parameter n

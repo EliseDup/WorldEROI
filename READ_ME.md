@@ -17,7 +17,7 @@ Input data from external databases are described in XLS file: *data/Legend_Wind_
 * ...
 
 Then the estimated energy produced and energy inputs are computed within the *world_grid.world_grid_eroi()* method for every renewable technology considered.
-The column and the associated caclulation are described in detailed in XLS file: *data/Legend_Wind_Solar_Data.xls*, tab *df.columns*.
+The column and the associated calculation are described in detailed in XLS file: *data/Legend_Wind_Solar_Data.xls*, tab *df.columns*.
 * wind_onshore_area, wind_offshore_area, pv_area, csp_area = total area [m^2] suitable for the corresponding technology, based on the suitability factors defined in files located in folder *data/suitability_factors*
 * wind_onshore_e, wind_offshore_e, pv_e, csp_e = estimated energy outputs [EJ/year]
 * wind_onshore_e_in, ... : energy inputs [EJ/year]
