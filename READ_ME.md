@@ -52,10 +52,10 @@ That is it, you should have all the date in your dataframe *df*.
 * Or ... Do more with the model with a Python IDE like PyCharm :-)
 
 ## Know issues with the installation
-# Windows GDAL installation using pip
+### Windows GDAL installation using pip
 If you are under a Windows environment you may encounter some trouble with the installation (especially with geopandas and GDAL package).
 If so, try the following procedure : https://vincent.doba.fr/posts/20210407_install-fiona-on-windows/
-# Other issues
+### Other issues
 Please contact me if you encounter any other issue with the installation.
 
 ## References
