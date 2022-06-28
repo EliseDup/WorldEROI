@@ -71,7 +71,7 @@ def world_grid():
     df = model_methods.compute_sf(df, sf_files + 'slope_csp', 'slope_csp_sf')
     df['csp_sf'] *= df['slope_csp_sf']
     df['csp_sf'] *= (df['DNI'] > 0)
-
+    df['wind_sf'] = df['wind_sf_onshore'] + df['wind_sf_offshore']
     # Compute suitable area for each RES based on the total area [m²] and on the suitability factor [%]
     df['wind_area_onshore'] = df['Area'] * df['wind_sf_onshore']  # [m²]
     df['wind_area_offshore'] = df['Area'] * df['wind_sf_offshore']  # [m²]
@@ -167,13 +167,13 @@ def world_grid_eroi():
 
     # -------- Compute the solar pv energy outputs, energy inputs and EROI --------#
     df['pv_gw'] = model_params.wc_pv_panel * df['pv_area'] * model_params.pv_gcr / 1E9
-    df['pv_e'] = model_methods.E_out_solar(df['GHI'], df['pv_area']* model_params.pv_gcr) * 1e-18
+    df['pv_e'] = model_methods.E_out_solar(df['GHI'], df['pv_area'] * model_params.pv_gcr) * 1e-18
     if model_params.remove_operational_e:
         df['pv_e'] *= (1 - model_params.oe_pv)
     df['pv_e_in'] = (model_params.pv_life_time_inputs / model_params.pv_life_time) * df['pv_gw'] * 1e-18
     df['pv_eroi'] = model_methods.eroi(df['pv_e'], df['pv_e_in'], model_params.oe_pv)
 
-    df['pv_cf'] = df['pv_e'] * model_params.ej_to_twh / (df['pv_gw'].sum() * 365 * 24 / 1000)
+    df['pv_cf'] = df['pv_e'] * model_params.ej_to_twh / (df['pv_gw'] * 365 * 24 / 1000)
 
     # -------- Compute the solar csp energy outputs, energy inputs and EROI --------#
     # First compute the "optimal" solar multiple
