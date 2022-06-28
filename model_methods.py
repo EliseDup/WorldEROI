@@ -28,7 +28,7 @@ def area(latitude):
 
 # Wind power calculations
 # Capacity factor calculation depending on wind_onshore speed distribution and wind_onshore turbine specification
-def capacity_factor(v_r, c, k):
+def capacity_factor_wind(v_r, c, k):
     return -np.exp(-pow(model_params.v_f / c, k)) + 3 * pow(c, 3) * gamma(3 / k) / (
             k * (pow(v_r, 3) - pow(model_params.v_c, 3))) * (
                    gammainc(3 / k, pow(v_r / c, k)) - gammainc(3 / k, pow(model_params.v_c / c, k)))
@@ -60,7 +60,7 @@ def rated_power(v_r, n, rho, area):
 # Energy produced on a given area over wind_onshore turbine life time [J/year]
 # Installed Power [W] * Cf [-] * array effect [-] * availability factor [-]
 def E_out_wind(v_r, n, c, k, rho, a, avail_factor):
-    return rated_power(v_r, n, rho, a) * capacity_factor(v_r, c, k) * array_efficiency(
+    return rated_power(v_r, n, rho, a) * capacity_factor_wind(v_r, c, k) * array_efficiency(
         n) * avail_factor * model_params.hours_in_year * model_params.watth_to_joules  # [J]
 
 
@@ -184,6 +184,10 @@ def eroi(e_out, e_in, o_e):
 # Return the potential (found in column named 'e_out') based on a minimum eroi criterai
 def potential(df, e_out, eroi, eroi_min):
     return df.loc[df[eroi] >= eroi_min, e_out].sum()
+
+
+def capacity_factor(e_ej, cap_gw):
+    return e_ej * model_params.ej_to_twh / (cap_gw * 365 * 24 / 1000)
 
 
 def print_potential(df, eroi_min):
